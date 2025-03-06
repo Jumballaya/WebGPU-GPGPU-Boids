@@ -5,7 +5,6 @@ import { BoidsApp } from "./BoidsApp";
 async function main() {
   const screenSize: [number, number] = [1024, 768];
   const webgpu = await initialize_canvas(screenSize);
-  document.body.appendChild(webgpu.canvas);
   const app = new BoidsApp({
     ...webgpu,
     boidCount: 3000,

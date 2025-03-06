@@ -3,6 +3,7 @@ import { BoidRenderer } from "./BoidRenderer";
 import { Camera } from "./Camera";
 import { BoidSimulation } from "./BoidSimulation";
 import { SimUniforms } from "./SimUniforms";
+import { BoidsUI } from "./BoidsUI";
 
 //
 //                    Renderer
@@ -76,6 +77,7 @@ export class BoidsApp {
       this.boidCount
     );
 
+    new BoidsUI(this.uniforms, this.canvas);
     this.setupListeners();
   }
 
