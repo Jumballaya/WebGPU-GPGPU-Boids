@@ -9,3 +9,5 @@ Based on the concept created by Craig Reynolds in 1986. [Boids](https://en.wikip
 ### Demo
 
 [Check it out yourself](https://jumballaya.github.io/WebGPU-GPGPU-Boids/)
+
+You can use the mouse wheel to scroll in and out.
