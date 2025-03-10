@@ -1,4 +1,4 @@
-import boidShader from "./shaders/boid.render.wgsl?raw";
+import boidShader from "../shaders/boid.render.wgsl?raw";
 import { Camera } from "./Camera";
 
 export class BoidRenderer {
@@ -126,6 +126,5 @@ export class BoidRenderer {
     pass.setBindGroup(0, this.bindGroup);
     pass.setBindGroup(1, camera.bindGroup);
     pass.drawIndexed(3, this.instanceCount);
-    pass.end();
   }
 }

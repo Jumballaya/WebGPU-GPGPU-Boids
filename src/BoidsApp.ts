@@ -1,9 +1,10 @@
 import "./style.css";
-import { BoidRenderer } from "./BoidRenderer";
-import { Camera } from "./Camera";
-import { BoidSimulation } from "./BoidSimulation";
-import { SimUniforms } from "./SimUniforms";
+import { BoidRenderer } from "./render/BoidRenderer";
+import { Camera } from "./render/Camera";
+import { BoidSimulation } from "./simulation/BoidSimulation";
+import { SimUniforms } from "./simulation/SimUniforms";
 import { BoidsUI } from "./BoidsUI";
+import { MinimapRenderer } from "./render/MinimapRenderer";
 
 //
 //                    Renderer
@@ -45,11 +46,16 @@ export class BoidsApp {
   private worldSize: [number, number];
 
   private camera: Camera;
-  private renderer: BoidRenderer;
+  private cameraTmp: Camera;
+
+  private boidsRenderer: BoidRenderer;
+  private minimapRenderer: MinimapRenderer;
   private simulation: BoidSimulation;
   private uniforms: SimUniforms;
   private boidCount: number;
   private worldMultiplier: number;
+
+  private inputs: Record<string, boolean> = {};
 
   constructor(config: BoidsAppConfig) {
     this.canvas = config.canvas;
@@ -59,12 +65,22 @@ export class BoidsApp {
     this.boidCount = config.boidCount;
     this.worldMultiplier = config.worldMultiplier;
     this.camera = new Camera(this.device, config.screenSize);
+
+    this.cameraTmp = new Camera(this.device, config.screenSize);
+    this.cameraTmp.zoom = 1;
+    this.camera.zoom = 4;
+
     this.worldSize = [
       config.worldMultiplier * config.screenSize[0],
       config.worldMultiplier * config.screenSize[1],
     ];
     this.uniforms = new SimUniforms(this.device, this.worldSize, 50);
-    this.renderer = new BoidRenderer(
+    this.minimapRenderer = new MinimapRenderer(
+      this.device,
+      this.gpu,
+      this.cameraTmp
+    );
+    this.boidsRenderer = new BoidRenderer(
       this.device,
       this.gpu,
       this.camera,
@@ -82,7 +98,19 @@ export class BoidsApp {
   }
 
   public update(deltaTime: number) {
-    const { uniforms, camera, simulation, renderer, device, ctx } = this;
+    const {
+      uniforms,
+      camera,
+      cameraTmp,
+      simulation,
+      boidsRenderer,
+      minimapRenderer,
+      device,
+      ctx,
+    } = this;
+
+    camera.update(this.inputs);
+
     uniforms.deltaTime = deltaTime / 1000;
     const encoder = device.createCommandEncoder();
 
@@ -95,7 +123,7 @@ export class BoidsApp {
     encoder.copyBufferToBuffer(
       simulation.boidsBuffer,
       0,
-      renderer.instanceBuffer,
+      boidsRenderer.instanceBuffer,
       0,
       simulation.boidsBuffer.size
     );
@@ -112,7 +140,10 @@ export class BoidsApp {
       ],
     });
 
-    renderer.draw(renderPass, camera);
+    boidsRenderer.draw(renderPass, camera);
+    minimapRenderer.draw(renderPass, cameraTmp);
+
+    renderPass.end();
 
     const buffer = encoder.finish();
     device.queue.submit([buffer]);
@@ -120,15 +151,22 @@ export class BoidsApp {
 
   private setupListeners() {
     const { canvas, camera, worldMultiplier } = this;
-    canvas.addEventListener("wheel", (e) => {
-      const zoom = e.deltaY === 0 ? 0 : e.deltaY > 0 ? 1 : -1;
-      camera.zoom += zoom * 0.125;
-      if (camera.zoom < 0.0625) {
-        camera.zoom = 0.0625;
-      }
-      if (camera.zoom > worldMultiplier) {
-        camera.zoom = worldMultiplier;
-      }
-    });
+    // canvas.addEventListener("wheel", (e) => {
+    //   const zoom = e.deltaY === 0 ? 0 : e.deltaY > 0 ? 1 : -1;
+    //   camera.zoom += zoom * 0.125;
+    //   if (camera.zoom < 0.0625) {
+    //     camera.zoom = 0.0625;
+    //   }
+    //   if (camera.zoom > worldMultiplier) {
+    //     camera.zoom = worldMultiplier;
+    //   }
+    // });
+
+    // document.body.addEventListener("keydown", (e) => {
+    //   this.inputs[e.key] = true;
+    // });
+    // document.body.addEventListener("keyup", (e) => {
+    //   this.inputs[e.key] = false;
+    // });
   }
 }

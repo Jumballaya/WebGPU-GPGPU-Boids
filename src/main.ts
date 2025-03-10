@@ -1,5 +1,5 @@
 import "./style.css";
-import { initialize_canvas } from "./canvas";
+import { initialize_canvas } from "./render/canvas";
 import { BoidsApp } from "./BoidsApp";
 
 async function main() {

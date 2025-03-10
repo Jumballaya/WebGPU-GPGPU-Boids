@@ -1,4 +1,4 @@
-import { SimUniforms } from "./SimUniforms";
+import { SimUniforms } from "./simulation/SimUniforms";
 
 export class BoidsUI {
   private uniforms: SimUniforms;

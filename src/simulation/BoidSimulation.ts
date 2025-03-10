@@ -1,5 +1,5 @@
 import BufferWrap from "buffwrap";
-import shaderSource from "./shaders/boids.compute.wgsl?raw";
+import shaderSource from "../shaders/boids.compute.wgsl?raw";
 
 type BoidStruct = {
   position: [number, number, number, number]; // [ x, y, _, _ ]
