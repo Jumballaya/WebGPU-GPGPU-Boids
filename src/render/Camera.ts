@@ -13,7 +13,16 @@ export class Camera {
 
   private screenSize: [number, number];
 
-  constructor(device: GPUDevice, screenSize: [number, number]) {
+  constructor(
+    device: GPUDevice,
+    screenSize: [number, number],
+    left = -screenSize[0] / 2,
+    right = screenSize[0] / 2,
+    bottom = screenSize[1] / 2,
+    top = -screenSize[1] / 2,
+    near = 0,
+    far = 1000
+  ) {
     this.device = device;
     this.screenSize = screenSize;
 
@@ -27,15 +36,7 @@ export class Camera {
       ],
     });
     const ortho = mat4.create();
-    mat4.orthoZO(
-      ortho,
-      -screenSize[0] / 2,
-      screenSize[0] / 2,
-      screenSize[1] / 2,
-      -screenSize[1] / 2,
-      0,
-      1000
-    );
+    mat4.orthoZO(ortho, left, right, bottom, top, near, far);
     this.buffer = device.createBuffer({
       size: this.data.byteLength,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
@@ -55,33 +56,10 @@ export class Camera {
     });
   }
 
-  public update(inputs: Record<string, boolean>) {
-    const pos: [number, number] = [this.translation[0], this.translation[1]];
-    if (inputs["w"]) {
-      pos[1] -= 10;
-    }
+  public update(inputs: Record<string, boolean>) {}
 
-    if (inputs["a"]) {
-      pos[0] -= 10;
-    }
-
-    if (inputs["s"]) {
-      pos[1] += 10;
-    }
-
-    if (inputs["d"]) {
-      pos[0] += 10;
-    }
-
-    const xBound = this.screenSize[0] / 2 - this.screenSize[0] / 8;
-    const yBound = this.screenSize[1] / 2 - this.screenSize[1] / 8;
-
-    if (pos[0] < -xBound) pos[0] = -xBound;
-    if (pos[1] < -yBound) pos[1] = -yBound;
-    if (pos[0] > xBound) pos[0] = xBound;
-    if (pos[1] > yBound) pos[1] = yBound;
-
-    this.position = pos;
+  public get size(): [number, number] {
+    return this.screenSize;
   }
 
   public set zoom(z: number) {
@@ -105,8 +83,8 @@ export class Camera {
 
   private setViewMatrix() {
     const view = mat4.create();
-    mat4.scale(view, view, [this.scale, this.scale, 1]);
     mat4.translate(view, view, [this.translation[0], this.translation[1], 0]);
+    mat4.scale(view, view, [this.scale, this.scale, 1]);
     mat4.invert(view, view);
     this.data.set(view);
     this.data.set([this.scale], 32);

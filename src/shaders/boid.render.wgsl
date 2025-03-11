@@ -14,6 +14,7 @@ struct Boid {
 struct Camera {
   viewMatrix: mat4x4f,
   projMatrix: mat4x4f,
+  zoom: f32,
 }
 
 struct VertexIn {

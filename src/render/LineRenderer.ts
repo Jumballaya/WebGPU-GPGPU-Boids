@@ -1,11 +1,6 @@
 import lineShaderSource from "../shaders/line.render.wgsl?raw";
 import { Camera } from "./Camera";
 
-type LineVertex = {
-  position: [number, number];
-  color: [number, number, number];
-};
-
 export class LineRenderer {
   private device: GPUDevice;
   private pipeline: GPURenderPipeline;
@@ -20,7 +15,11 @@ export class LineRenderer {
     color: [number, number, number];
   }> = new Set();
 
-  constructor(device: GPUDevice, gpu: GPU, camera: Camera) {
+  constructor(
+    device: GPUDevice,
+    textureFormat: GPUTextureFormat,
+    camera: Camera
+  ) {
     this.device = device;
 
     const lineShader = device.createShaderModule({
@@ -65,7 +64,7 @@ export class LineRenderer {
         module: lineShader,
         targets: [
           {
-            format: gpu.getPreferredCanvasFormat(),
+            format: textureFormat,
           },
         ],
       },
