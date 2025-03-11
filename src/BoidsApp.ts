@@ -117,13 +117,21 @@ export class BoidsApp {
     );
 
     new BoidsUI(this.uniforms, this.canvas);
+
+    document.body.addEventListener("keydown", (e) => {
+      this.inputs[e.key] = true;
+    });
+    document.body.addEventListener("keyup", (e) => {
+      this.inputs[e.key] = false;
+    });
   }
 
   public async update(_: number) {
-    const { camera, simulation, minimap } = this;
+    const { camera, minimapCamera, simulation, minimap } = this;
 
     await simulation.copyFromGPU();
     camera.update(this.inputs, this.worldMultiplier);
+    minimapCamera.update(this.inputs, this.worldMultiplier);
     minimap.update(this.camera, simulation.boids);
   }
 

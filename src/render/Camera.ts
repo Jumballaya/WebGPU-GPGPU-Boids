@@ -8,7 +8,7 @@ export class Camera {
   public readonly bindGroupLayout: GPUBindGroupLayout;
   public noZoom = false;
   public noPan = false;
-  public speed = 4;
+  public speed = 12;
 
   private scale = 1;
   private translation: [number, number] = [0, 0];
@@ -71,50 +71,44 @@ export class Camera {
       }
       this.zoom = zoom;
     });
+  }
 
-    document.body.addEventListener("keydown", (e) => {
-      if (this.noPan) return;
+  public update(inputs: Record<string, boolean>, worldMultiplier = 1) {
+    if (!this.noPan) {
       const position: [number, number] = [
         this.translation[0],
         this.translation[1],
       ];
-      if (e.key === "w") {
+      const rect = this.rect;
+      const xBounds = (this.screenSize[0] / 2) * worldMultiplier;
+      const yBounds = (this.screenSize[1] / 2) * worldMultiplier;
+      if (inputs["w"]) {
         position[1] -= this.speed * this.zoom;
       }
-      if (e.key === "a") {
+      if (inputs["a"]) {
         position[0] -= this.speed * this.zoom;
       }
-      if (e.key === "s") {
+      if (inputs["s"]) {
         position[1] += this.speed * this.zoom;
       }
-      if (e.key === "d") {
+      if (inputs["d"]) {
         position[0] += this.speed * this.zoom;
       }
-      this.position = position;
-    });
-  }
 
-  public update(_: Record<string, boolean>, worldMultiplier = 1) {
-    const rect = this.rect;
-    const xBounds = (this.screenSize[0] / 2) * worldMultiplier;
-    const yBounds = (this.screenSize[1] / 2) * worldMultiplier;
-    const position: [number, number] = [
-      this.translation[0],
-      this.translation[1],
-    ];
-    if (rect.x <= -xBounds) {
-      position[0] += -rect.x - xBounds;
+      if (rect.x <= -xBounds) {
+        position[0] += -rect.x - xBounds;
+      }
+      if (rect.y <= -yBounds) {
+        position[1] += -rect.y - yBounds;
+      }
+      if (rect.x >= xBounds - this.rect.w) {
+        position[0] -= rect.x + rect.w - xBounds;
+      }
+      if (rect.y >= yBounds - this.rect.h) {
+        position[1] -= rect.y + rect.h - yBounds;
+      }
+      this.position = position;
     }
-    if (rect.y <= -yBounds) {
-      position[1] += -rect.y - yBounds;
-    }
-    if (rect.x >= xBounds - this.rect.w) {
-      position[0] -= rect.x + rect.w - xBounds;
-    }
-    if (rect.y >= yBounds - this.rect.h) {
-      position[1] -= rect.y + rect.h - yBounds;
-    }
-    this.position = position;
   }
 
   public get rect(): Rectangle {
