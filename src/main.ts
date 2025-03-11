@@ -17,7 +17,7 @@ async function main() {
     const curTime = performance.now();
     const deltaTime = curTime - time;
     time = curTime;
-    await app.update(deltaTime);
+    await app.update(deltaTime / 1000);
     app.render(deltaTime);
     requestAnimationFrame(loop);
   };

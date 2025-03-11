@@ -35,7 +35,7 @@ export class Minimap {
       rect.y / this.worldMultiplier + 1,
       rect.w / this.worldMultiplier - 1,
       rect.h / this.worldMultiplier - 1,
-      [1, 1, 0]
+      [0.99609375, 0.640625, 0.5]
     );
   }
 }

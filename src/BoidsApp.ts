@@ -8,6 +8,7 @@ import { Minimap } from "./render/Minimap";
 import { LineRenderer } from "./render/LineRenderer";
 import { Surface } from "./render/Surface";
 import { PointRenderer } from "./render/PointRenderer";
+import { Inputs } from "./Inputs";
 
 //
 //                    Renderer
@@ -62,7 +63,7 @@ export class BoidsApp {
   private boidCount: number;
   private worldMultiplier: number;
 
-  private inputs: Record<string, boolean> = {};
+  private inputs: Inputs;
 
   constructor(config: BoidsAppConfig) {
     this.canvas = config.canvas;
@@ -71,6 +72,7 @@ export class BoidsApp {
     this.device = config.device;
     this.boidCount = config.boidCount;
     this.worldMultiplier = config.worldMultiplier;
+    this.inputs = new Inputs(config.canvas);
     this.camera = new Camera(this.device, config.screenSize);
     this.minimapCamera = new Camera(this.device, config.screenSize);
     this.minimapCamera.zoom = 1;
@@ -117,21 +119,14 @@ export class BoidsApp {
     );
 
     new BoidsUI(this.uniforms, this.canvas);
-
-    document.body.addEventListener("keydown", (e) => {
-      this.inputs[e.key] = true;
-    });
-    document.body.addEventListener("keyup", (e) => {
-      this.inputs[e.key] = false;
-    });
   }
 
-  public async update(_: number) {
+  public async update(deltaTime: number) {
     const { camera, minimapCamera, simulation, minimap } = this;
 
     await simulation.copyFromGPU();
-    camera.update(this.inputs, this.worldMultiplier);
-    minimapCamera.update(this.inputs, this.worldMultiplier);
+    camera.update(this.inputs, deltaTime, this.worldMultiplier);
+    minimapCamera.update(this.inputs, deltaTime, this.worldMultiplier);
     minimap.update(this.camera, simulation.boids);
   }
 

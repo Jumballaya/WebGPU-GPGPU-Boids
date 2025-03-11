@@ -1,5 +1,6 @@
 import { mat4 } from "gl-matrix";
 import { Rectangle } from "./type";
+import { Inputs } from "../Inputs";
 
 export class Camera {
   private device: GPUDevice;
@@ -8,7 +9,7 @@ export class Camera {
   public readonly bindGroupLayout: GPUBindGroupLayout;
   public noZoom = false;
   public noPan = false;
-  public speed = 12;
+  public speed = 700;
 
   private scale = 1;
   private translation: [number, number] = [0, 0];
@@ -58,22 +59,9 @@ export class Camera {
         },
       ],
     });
-
-    document.body.addEventListener("wheel", (e) => {
-      if (this.noZoom) return;
-      let zoom = e.deltaY === 0 ? 0 : e.deltaY > 0 ? 1 : -1;
-      zoom = zoom * 0.125 + this.zoom;
-      if (zoom < 0.0625) {
-        zoom = 0.0625;
-      }
-      if (zoom > 4) {
-        zoom = 4;
-      }
-      this.zoom = zoom;
-    });
   }
 
-  public update(inputs: Record<string, boolean>, worldMultiplier = 1) {
+  public update(inputs: Inputs, deltaTime: number, worldMultiplier = 1) {
     if (!this.noPan) {
       const position: [number, number] = [
         this.translation[0],
@@ -82,17 +70,23 @@ export class Camera {
       const rect = this.rect;
       const xBounds = (this.screenSize[0] / 2) * worldMultiplier;
       const yBounds = (this.screenSize[1] / 2) * worldMultiplier;
-      if (inputs["w"]) {
-        position[1] -= this.speed * this.zoom;
+      if (inputs.keyIsPressed("w")) {
+        position[1] -= this.speed * this.zoom * deltaTime;
       }
-      if (inputs["a"]) {
-        position[0] -= this.speed * this.zoom;
+      if (inputs.keyIsPressed("a")) {
+        position[0] -= this.speed * this.zoom * deltaTime;
       }
-      if (inputs["s"]) {
-        position[1] += this.speed * this.zoom;
+      if (inputs.keyIsPressed("s")) {
+        position[1] += this.speed * this.zoom * deltaTime;
       }
-      if (inputs["d"]) {
-        position[0] += this.speed * this.zoom;
+      if (inputs.keyIsPressed("d")) {
+        position[0] += this.speed * this.zoom * deltaTime;
+      }
+
+      if (inputs.mousePressed() && inputs.mouseDragging()) {
+        const delta = inputs.dragOffset;
+        position[0] -= delta[0] * this.zoom * this.speed * deltaTime;
+        position[1] -= delta[1] * this.zoom * this.speed * deltaTime;
       }
 
       if (rect.x <= -xBounds) {
@@ -108,6 +102,12 @@ export class Camera {
         position[1] -= rect.y + rect.h - yBounds;
       }
       this.position = position;
+    }
+    if (!this.noZoom) {
+      this.zoom = Math.min(
+        4,
+        Math.max(0.0625, (inputs.mouseWheel * 0.125) / 2)
+      );
     }
   }
 
