@@ -117,7 +117,7 @@ export class BoidsApp {
     new BoidsUI(this.uniforms, this.canvas);
   }
 
-  public async update(deltaTime: number) {
+  public async update(_: number) {
     const { camera, simulation, minimap } = this;
 
     await simulation.copyFromGPU();

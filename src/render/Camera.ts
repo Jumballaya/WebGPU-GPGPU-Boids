@@ -56,7 +56,7 @@ export class Camera {
     });
   }
 
-  public update(inputs: Record<string, boolean>) {}
+  public update(_: Record<string, boolean>) {}
 
   public get size(): [number, number] {
     return this.screenSize;
