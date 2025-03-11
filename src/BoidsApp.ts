@@ -7,6 +7,7 @@ import { BoidsUI } from "./BoidsUI";
 import { Minimap } from "./render/Minimap";
 import { LineRenderer } from "./render/LineRenderer";
 import { Surface } from "./render/Surface";
+import { PointRenderer } from "./render/PointRenderer";
 
 //
 //                    Renderer
@@ -55,6 +56,7 @@ export class BoidsApp {
 
   private boidsRenderer: BoidRenderer;
   private lineRenderer: LineRenderer;
+  private pointRenderer: PointRenderer;
   private simulation: BoidSimulation;
   private uniforms: SimUniforms;
   private boidCount: number;
@@ -87,7 +89,12 @@ export class BoidsApp {
     this.lineRenderer = new LineRenderer(
       this.device,
       this.gpu.getPreferredCanvasFormat(),
-      this.minimapCamera
+      this.minimapCamera.bindGroupLayout
+    );
+    this.pointRenderer = new PointRenderer(
+      this.device,
+      this.gpu.getPreferredCanvasFormat(),
+      this.minimapCamera.bindGroupLayout
     );
     this.boidsRenderer = new BoidRenderer(
       this.device,
@@ -101,26 +108,33 @@ export class BoidsApp {
       this.uniforms.bindGroupLayout,
       this.boidCount
     );
-
-    this.minimap = new Minimap(this.lineRenderer, this.worldMultiplier);
+    this.minimap = new Minimap(
+      this.lineRenderer,
+      this.pointRenderer,
+      this.worldMultiplier
+    );
 
     new BoidsUI(this.uniforms, this.canvas);
   }
 
-  public update(deltaTime: number) {
+  public async update(deltaTime: number) {
+    const { camera, simulation, minimap } = this;
+
+    await simulation.copyFromGPU();
+    camera.update(this.inputs);
+    minimap.update(camera, simulation.boids);
+  }
+
+  public render(deltaTime: number) {
     const {
       uniforms,
       camera,
       minimapCamera,
       simulation,
       boidsRenderer,
-      minimap,
       device,
       ctx,
     } = this;
-
-    camera.update(this.inputs);
-    minimap.update(camera);
 
     uniforms.deltaTime = deltaTime / 1000;
     const encoder = device.createCommandEncoder();
@@ -129,8 +143,6 @@ export class BoidsApp {
     const computePass = encoder.beginComputePass();
     simulation.run(computePass, uniforms.bindGroup);
     computePass.end();
-
-    // Copy Data to renderer
     encoder.copyBufferToBuffer(
       simulation.boidsBuffer,
       0,
@@ -138,12 +150,14 @@ export class BoidsApp {
       0,
       simulation.boidsBuffer.size
     );
+    simulation.syncStaging(encoder);
 
     // Render Pass
 
     // Minimap Render to texture
     const mmCreationPass = this.minimapSurface.begin(encoder);
     this.lineRenderer.draw(mmCreationPass, minimapCamera);
+    this.pointRenderer.draw(mmCreationPass, minimapCamera);
     mmCreationPass.end();
 
     // Boids Render

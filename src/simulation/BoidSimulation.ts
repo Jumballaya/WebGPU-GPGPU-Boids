@@ -1,12 +1,6 @@
 import BufferWrap from "buffwrap";
 import shaderSource from "../shaders/boids.compute.wgsl?raw";
-
-type BoidStruct = {
-  position: [number, number, number, number]; // [ x, y, _, _ ]
-  velocity: [number, number, number, number]; // [ x, y, _, _ ]
-  data: [number, number, number, number]; // [ rot, size, _, _ ]
-  color: [number, number, number, number]; // [ r, g, b, a ]
-};
+import type { BoidStruct } from "./types";
 
 export class BoidSimulation {
   private device: GPUDevice;
@@ -22,6 +16,7 @@ export class BoidSimulation {
 
   // Buffers
   public boidsBuffer: GPUBuffer;
+  private boidsStagingBuffer: GPUBuffer;
   private forcesBuffer: GPUBuffer;
 
   // Pipelines
@@ -62,6 +57,7 @@ export class BoidSimulation {
     const buffers = this.createBuffers();
     this.boidsBuffer = buffers.boids;
     this.forcesBuffer = buffers.forces;
+    this.boidsStagingBuffer = buffers.staging;
 
     const bindGroup = this.createBindGroup();
     this.bindGroupLayout = bindGroup.layout;
@@ -102,6 +98,22 @@ export class BoidSimulation {
     pass.dispatchWorkgroups(this.boidCount);
   }
 
+  public syncStaging(encoder: GPUCommandEncoder) {
+    encoder.copyBufferToBuffer(
+      this.boidsBuffer,
+      0,
+      this.boidsStagingBuffer,
+      0,
+      this.boidsBuffer.size
+    );
+  }
+
+  public async copyFromGPU() {
+    await this.boidsStagingBuffer.mapAsync(GPUMapMode.READ);
+    this.boids.from(this.boidsStagingBuffer.getMappedRange());
+    this.boidsStagingBuffer.unmap();
+  }
+
   private generateRandomBoids() {
     for (let i = 0; i < this.boidCount; i++) {
       const rand = Math.random() * Math.PI * 2;
@@ -136,7 +148,12 @@ export class BoidSimulation {
         GPUBufferUsage.COPY_DST |
         GPUBufferUsage.COPY_SRC,
     });
-    return { forces, boids };
+    const staging = this.device.createBuffer({
+      label: "Boids Compute Staging Buffer",
+      size: this.boids.buffer.byteLength,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+    return { forces, boids, staging };
   }
 
   private createBindGroup() {

@@ -1,17 +1,16 @@
-import lineShaderSource from "../shaders/line.render.wgsl?raw";
+import pointShaderSource from "../shaders/point.render.wgsl?raw";
 import { Camera } from "./Camera";
 
-export class LineRenderer {
+export class PointRenderer {
   private device: GPUDevice;
   private pipeline: GPURenderPipeline;
 
-  private maxLinesPerDraw = 1000;
+  private maxPointsToDraw = 3000;
   private vertexData: Float32Array;
   private vertexBuffer: GPUBuffer;
   private vertexStride = 5; // x, y, r, g, b
-  private linesToDraw: Set<{
-    from: [number, number];
-    to: [number, number];
+  private pointsToDraw: Set<{
+    position: [number, number];
     color: [number, number, number];
   }> = new Set();
 
@@ -22,12 +21,12 @@ export class LineRenderer {
   ) {
     this.device = device;
 
-    const lineShader = device.createShaderModule({
-      code: lineShaderSource,
+    const pointShader = device.createShaderModule({
+      code: pointShaderSource,
     });
 
     this.vertexData = new Float32Array(
-      this.maxLinesPerDraw * this.vertexStride * 2
+      this.maxPointsToDraw * this.vertexStride
     );
     this.vertexBuffer = this.device.createBuffer({
       size: this.vertexData.byteLength,
@@ -40,7 +39,7 @@ export class LineRenderer {
       }),
 
       vertex: {
-        module: lineShader,
+        module: pointShader,
         buffers: [
           {
             arrayStride: this.vertexStride * Float32Array.BYTES_PER_ELEMENT,
@@ -53,7 +52,7 @@ export class LineRenderer {
               {
                 shaderLocation: 1,
                 offset: 2 * Float32Array.BYTES_PER_ELEMENT,
-                format: "float32x2",
+                format: "float32x3",
               },
             ],
           },
@@ -61,7 +60,7 @@ export class LineRenderer {
       },
 
       fragment: {
-        module: lineShader,
+        module: pointShader,
         targets: [
           {
             format: textureFormat,
@@ -70,57 +69,30 @@ export class LineRenderer {
       },
 
       primitive: {
-        topology: "line-list",
+        topology: "point-list",
       },
     });
   }
 
-  public line(
-    from: [number, number],
-    to: [number, number],
-    color: [number, number, number]
-  ) {
-    this.linesToDraw.add({ from, to, color });
-  }
-
-  public rect(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    color: [number, number, number]
-  ) {
-    // top
-    this.line([x, y], [x + w, y], color);
-    // right
-    this.line([x + w, y], [x + w, y + h], color);
-    // bottom
-    this.line([x, y + h], [x + w, y + h], color);
-    // left
-    this.line([x, y], [x, y + h], color);
+  public point(position: [number, number], color: [number, number, number]) {
+    this.pointsToDraw.add({ position, color });
   }
 
   public draw(pass: GPURenderPassEncoder, camera: Camera) {
-    if (this.linesToDraw.size === 0) return;
+    if (this.pointsToDraw.size === 0) return;
 
-    const vertexCount = this.linesToDraw.size * 2; // 2 vertices per line
+    const vertexCount = this.pointsToDraw.size;
     this.vertexData.fill(0);
 
     let ptr = 0;
-    for (const line of this.linesToDraw) {
-      let offset = ptr * this.vertexStride * 2;
+    for (const point of this.pointsToDraw) {
+      let offset = ptr * this.vertexStride;
 
-      this.vertexData[offset + 0] = line.from[0];
-      this.vertexData[offset + 1] = line.from[1];
-      this.vertexData[offset + 2] = line.color[0];
-      this.vertexData[offset + 3] = line.color[1];
-      this.vertexData[offset + 4] = line.color[2];
-
-      this.vertexData[offset + 5] = line.to[0];
-      this.vertexData[offset + 6] = line.to[1];
-      this.vertexData[offset + 7] = line.color[0];
-      this.vertexData[offset + 8] = line.color[1];
-      this.vertexData[offset + 9] = line.color[2];
+      this.vertexData[offset + 0] = point.position[0];
+      this.vertexData[offset + 1] = point.position[1];
+      this.vertexData[offset + 2] = point.color[0];
+      this.vertexData[offset + 3] = point.color[1];
+      this.vertexData[offset + 4] = point.color[2];
 
       ptr++;
     }
@@ -131,6 +103,6 @@ export class LineRenderer {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.draw(vertexCount);
 
-    this.linesToDraw.clear();
+    this.pointsToDraw.clear();
   }
 }

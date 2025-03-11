@@ -1,6 +1,5 @@
 import { mat4 } from "gl-matrix";
 import surfaceShaderSource from "../shaders/surface.render.wgsl?raw";
-import { Camera } from "./Camera";
 
 export class Surface {
   private size: [number, number];
@@ -20,6 +19,7 @@ export class Surface {
     a: 1,
   };
 
+  // TODO: bring camera back in for the BGL
   constructor(device: GPUDevice, gpu: GPU, size: [number, number]) {
     this.size = size;
 
@@ -152,6 +152,7 @@ export class Surface {
     return pass;
   }
 
+  // @TODO: Bring camera back in and use the projection matrix in the shader
   public draw(pass: GPURenderPassEncoder) {
     pass.setPipeline(this.pipeline);
     pass.setVertexBuffer(0, this.vertexBuffer);

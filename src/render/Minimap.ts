@@ -1,8 +1,12 @@
+import BufferWrap from "buffwrap";
 import { Camera } from "./Camera";
 import { LineRenderer } from "./LineRenderer";
+import { PointRenderer } from "./PointRenderer";
+import type { BoidStruct } from "../simulation/types";
 
 export class Minimap {
   private lineRenderer: LineRenderer;
+  private pointRenderer: PointRenderer;
 
   private position: [number, number] = [0, 0];
   private size: [number, number] = [1024, 768];
@@ -17,9 +21,14 @@ export class Minimap {
     h: 0,
   };
 
-  constructor(lineRenderer: LineRenderer, worldMultiplier = 1) {
+  constructor(
+    lineRenderer: LineRenderer,
+    pointRenderer: PointRenderer,
+    worldMultiplier = 1
+  ) {
     this.worldMultiplier = worldMultiplier;
     this.lineRenderer = lineRenderer;
+    this.pointRenderer = pointRenderer;
     this.setRect();
 
     document.body.addEventListener("keydown", (e) => {
@@ -52,17 +61,26 @@ export class Minimap {
     });
   }
 
-  public update(camera: Camera) {
+  public update(camera: Camera, boids: BufferWrap<BoidStruct>) {
     camera.position = [
       this.position[0] * this.worldMultiplier,
       this.position[1] * this.worldMultiplier,
     ];
     camera.zoom = this.zoom;
+    for (let i = 0; i < boids.buffer.byteLength / (16 * 4); i++) {
+      const boid = boids.at(i);
+      const pos = boid.position;
+      const color = boid.color;
+      this.pointRenderer.point(
+        [pos[0] / 4, pos[1] / 4],
+        [color[0], color[1], color[2]]
+      );
+    }
     this.lineRenderer.rect(
-      this.rect.x,
-      this.rect.y,
-      this.rect.w,
-      this.rect.h,
+      this.rect.x + 1,
+      this.rect.y + 1,
+      this.rect.w - 1,
+      this.rect.h - 1,
       [1, 1, 0]
     );
   }
