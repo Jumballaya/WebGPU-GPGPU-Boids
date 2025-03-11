@@ -1,10 +1,14 @@
 import { mat4 } from "gl-matrix";
+import { Rectangle } from "./type";
 
 export class Camera {
   private device: GPUDevice;
   private buffer: GPUBuffer;
   public readonly bindGroup: GPUBindGroup;
   public readonly bindGroupLayout: GPUBindGroupLayout;
+  public noZoom = false;
+  public noPan = false;
+  public speed = 4;
 
   private scale = 1;
   private translation: [number, number] = [0, 0];
@@ -54,9 +58,74 @@ export class Camera {
         },
       ],
     });
+
+    document.body.addEventListener("wheel", (e) => {
+      if (this.noZoom) return;
+      let zoom = e.deltaY === 0 ? 0 : e.deltaY > 0 ? 1 : -1;
+      zoom = zoom * 0.125 + this.zoom;
+      if (zoom < 0.0625) {
+        zoom = 0.0625;
+      }
+      if (zoom > 4) {
+        zoom = 4;
+      }
+      this.zoom = zoom;
+    });
+
+    document.body.addEventListener("keydown", (e) => {
+      if (this.noPan) return;
+      const position: [number, number] = [
+        this.translation[0],
+        this.translation[1],
+      ];
+      if (e.key === "w") {
+        position[1] -= this.speed * this.zoom;
+      }
+      if (e.key === "a") {
+        position[0] -= this.speed * this.zoom;
+      }
+      if (e.key === "s") {
+        position[1] += this.speed * this.zoom;
+      }
+      if (e.key === "d") {
+        position[0] += this.speed * this.zoom;
+      }
+      this.position = position;
+    });
   }
 
-  public update(_: Record<string, boolean>) {}
+  public update(_: Record<string, boolean>, worldMultiplier = 1) {
+    const rect = this.rect;
+    const xBounds = (this.screenSize[0] / 2) * worldMultiplier;
+    const yBounds = (this.screenSize[1] / 2) * worldMultiplier;
+    const position: [number, number] = [
+      this.translation[0],
+      this.translation[1],
+    ];
+    if (rect.x <= -xBounds) {
+      position[0] += -rect.x - xBounds;
+    }
+    if (rect.y <= -yBounds) {
+      position[1] += -rect.y - yBounds;
+    }
+    if (rect.x >= xBounds - this.rect.w) {
+      position[0] -= rect.x + rect.w - xBounds;
+    }
+    if (rect.y >= yBounds - this.rect.h) {
+      position[1] -= rect.y + rect.h - yBounds;
+    }
+    this.position = position;
+  }
+
+  public get rect(): Rectangle {
+    const zoom = this.noZoom ? 1 : this.zoom;
+    return {
+      x: this.position[0] - (this.size[0] / 2) * zoom,
+      y: this.position[1] - (this.size[1] / 2) * zoom,
+      w: this.size[0] * zoom,
+      h: this.size[1] * zoom,
+    };
+  }
 
   public get size(): [number, number] {
     return this.screenSize;
@@ -82,9 +151,10 @@ export class Camera {
   }
 
   private setViewMatrix() {
+    const scale = this.noZoom ? 1 : this.scale;
     const view = mat4.create();
     mat4.translate(view, view, [this.translation[0], this.translation[1], 0]);
-    mat4.scale(view, view, [this.scale, this.scale, 1]);
+    mat4.scale(view, view, [scale, scale, 1]);
     mat4.invert(view, view);
     this.data.set(view);
     this.data.set([this.scale], 32);

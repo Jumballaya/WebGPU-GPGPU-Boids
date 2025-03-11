@@ -72,10 +72,12 @@ export class BoidsApp {
     this.boidCount = config.boidCount;
     this.worldMultiplier = config.worldMultiplier;
     this.camera = new Camera(this.device, config.screenSize);
-
     this.minimapCamera = new Camera(this.device, config.screenSize);
     this.minimapCamera.zoom = 1;
+    this.minimapCamera.noZoom = true;
+    this.minimapCamera.noPan = true;
     this.camera.zoom = 4;
+
     this.minimapSurface = new Surface(this.device, this.gpu, [
       config.screenSize[0] / 4,
       config.screenSize[1] / 4,
@@ -99,7 +101,7 @@ export class BoidsApp {
     this.boidsRenderer = new BoidRenderer(
       this.device,
       this.gpu,
-      this.camera,
+      this.camera.bindGroupLayout,
       this.boidCount
     );
     this.simulation = new BoidSimulation(
@@ -121,8 +123,8 @@ export class BoidsApp {
     const { camera, simulation, minimap } = this;
 
     await simulation.copyFromGPU();
-    camera.update(this.inputs);
-    minimap.update(camera, simulation.boids);
+    camera.update(this.inputs, this.worldMultiplier);
+    minimap.update(this.camera, simulation.boids);
   }
 
   public render(deltaTime: number) {
@@ -171,6 +173,7 @@ export class BoidsApp {
         },
       ],
     });
+    renderPass.setViewport(0, 0, camera.size[0], camera.size[1], 0, 1);
     boidsRenderer.draw(renderPass, camera);
     renderPass.end();
 

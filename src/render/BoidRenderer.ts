@@ -13,7 +13,7 @@ export class BoidRenderer {
   constructor(
     device: GPUDevice,
     gpu: GPU,
-    camera: Camera,
+    cameraBGL: GPUBindGroupLayout,
     instanceCount = 1000
   ) {
     this.instanceCount = instanceCount;
@@ -65,7 +65,7 @@ export class BoidRenderer {
       label: "Render Pipeline",
       layout: device.createPipelineLayout({
         label: "Render Pipeline Layout",
-        bindGroupLayouts: [bindGroupLayout, camera.bindGroupLayout],
+        bindGroupLayouts: [bindGroupLayout, cameraBGL],
       }),
       vertex: {
         module: shader,
