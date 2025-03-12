@@ -7,7 +7,6 @@ export class BoidsUI {
 
   private container: HTMLDivElement;
   private selectedBoid: BoidStruct | undefined;
-  private originalColor: [number, number, number, number] = [1, 1, 1, 1];
 
   private _needsUpdate = false;
 

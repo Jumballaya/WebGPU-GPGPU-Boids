@@ -46,7 +46,7 @@ export class Inputs {
     element.addEventListener("mousedown", () => {
       this.mouse.clicking = true;
       let dragStarted = false;
-      const listener = (e: MouseEvent) => {
+      const listener = () => {
         if (!this.mouse.clicking) {
           this.mouse.dragging = false;
           element.removeEventListener("mousemove", listener);
