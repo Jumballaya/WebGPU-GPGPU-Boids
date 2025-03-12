@@ -9,6 +9,8 @@ import { LineRenderer } from "./render/LineRenderer";
 import { Surface } from "./render/Surface";
 import { PointRenderer } from "./render/PointRenderer";
 import { Inputs } from "./Inputs";
+import { vec2 } from "gl-matrix";
+import { BoidStruct } from "./simulation/types";
 
 //
 //                    Renderer
@@ -48,6 +50,7 @@ export class BoidsApp {
   private gpu: GPU;
   private device: GPUDevice;
   private worldSize: [number, number];
+  private screenSize: [number, number];
 
   private camera: Camera;
   private minimapCamera: Camera;
@@ -64,6 +67,9 @@ export class BoidsApp {
   private worldMultiplier: number;
 
   private inputs: Inputs;
+  private selectedBoid: BoidStruct | undefined;
+
+  private ui: BoidsUI;
 
   constructor(config: BoidsAppConfig) {
     this.canvas = config.canvas;
@@ -72,6 +78,7 @@ export class BoidsApp {
     this.device = config.device;
     this.boidCount = config.boidCount;
     this.worldMultiplier = config.worldMultiplier;
+    this.screenSize = config.screenSize;
     this.inputs = new Inputs(config.canvas);
     this.camera = new Camera(this.device, config.screenSize);
     this.minimapCamera = new Camera(this.device, config.screenSize);
@@ -118,16 +125,64 @@ export class BoidsApp {
       this.worldMultiplier
     );
 
-    new BoidsUI(this.uniforms, this.canvas);
+    this.ui = new BoidsUI(this.uniforms, this.canvas);
   }
 
   public async update(deltaTime: number) {
     const { camera, minimapCamera, simulation, minimap } = this;
 
+    this.ui.update(this.selectedBoid);
+    if (this.ui.needsUpdate) {
+      this.device.queue.writeBuffer(
+        this.simulation.boidsBuffer,
+        0,
+        this.simulation.boids.buffer
+      );
+    }
     await simulation.copyFromGPU();
+
     camera.update(this.inputs, deltaTime, this.worldMultiplier);
     minimapCamera.update(this.inputs, deltaTime, this.worldMultiplier);
     minimap.update(this.camera, simulation.boids);
+
+    const camRect = this.camera.rect;
+    const mouseWorldPos = vec2.fromValues(
+      this.inputs.mousePosition[0],
+      this.inputs.mousePosition[1]
+    );
+    vec2.sub(mouseWorldPos, mouseWorldPos, [
+      this.camera.size[0] / 2,
+      this.camera.size[1] / 2,
+    ]);
+    vec2.mul(mouseWorldPos, mouseWorldPos, [
+      this.worldMultiplier,
+      this.worldMultiplier,
+    ]);
+    vec2.div(mouseWorldPos, mouseWorldPos, [
+      this.screenSize[0] * this.worldMultiplier,
+      this.screenSize[1] * this.worldMultiplier,
+    ]);
+
+    const x = (mouseWorldPos[0] + 0.5) * camRect.w + camRect.x;
+    const y = (mouseWorldPos[1] + 0.5) * camRect.h + camRect.y;
+    vec2.set(mouseWorldPos, x, y);
+
+    for (
+      let i = 0;
+      i < this.simulation.boids.buffer.byteLength / (16 * 4);
+      i++
+    ) {
+      const boid = this.simulation.boids.at(i);
+      const pos = boid.position;
+      const distV = vec2.create();
+      vec2.sub(distV, mouseWorldPos, [pos[0], pos[1]]);
+      const dist = vec2.len(distV);
+      if (dist < 10) {
+        if (this.inputs.mousePressed()) {
+          this.selectedBoid = boid;
+        }
+      }
+    }
   }
 
   public render(deltaTime: number) {

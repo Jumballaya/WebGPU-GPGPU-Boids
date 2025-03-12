@@ -85,6 +85,19 @@ canvas {
   text-align: center;
 }
 
+.boids-control-panel input[type="color"] {
+  margin: 0px 8px 0px 0px;
+  padding: 0px 0px;
+  display: block;
+  width: 100%;
+  color: #ffa480;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #3e262e;
+  border: none;
+  text-align: center;
+}
+
 .boids-control-panel label h4 {
   width: 70%;
   color: #d74f38;
@@ -93,5 +106,9 @@ canvas {
 
 .boids-control-panel label input[type="number"] {
   width: 30%;
+}
+
+.boids-selected-position {
+  min-width: 110px;
 }
 

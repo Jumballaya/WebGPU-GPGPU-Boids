@@ -7,7 +7,7 @@ async function main() {
   const webgpu = await initialize_canvas(screenSize);
   const app = new BoidsApp({
     ...webgpu,
-    boidCount: 3000,
+    boidCount: 1000,
     screenSize,
     worldMultiplier: 4,
   });

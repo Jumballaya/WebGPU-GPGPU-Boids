@@ -1,10 +1,15 @@
 import { SimUniforms } from "./simulation/SimUniforms";
+import { BoidStruct } from "./simulation/types";
 
 export class BoidsUI {
   private uniforms: SimUniforms;
   private canvas: HTMLCanvasElement;
 
   private container: HTMLDivElement;
+  private selectedBoid: BoidStruct | undefined;
+  private originalColor: [number, number, number, number] = [1, 1, 1, 1];
+
+  private _needsUpdate = false;
 
   constructor(uniforms: SimUniforms, canvas: HTMLCanvasElement) {
     this.uniforms = uniforms;
@@ -16,6 +21,51 @@ export class BoidsUI {
     this.container.querySelector("#canvas")!.appendChild(this.canvas);
     this.setupListeners();
     document.body.appendChild(this.container);
+  }
+
+  public update(selectedBoid: BoidStruct | undefined) {
+    if (selectedBoid !== this.selectedBoid) {
+      this.selectedBoid = selectedBoid;
+      if (selectedBoid) {
+        this.container
+          .querySelector("#selected_tracker")!
+          .removeAttribute("hidden");
+        const boidColor = selectedBoid.color;
+        const color = this.container.querySelector(
+          "#selected_color"
+        ) as HTMLInputElement;
+        color.value =
+          "#" +
+          [boidColor[0], boidColor[1], boidColor[1]]
+            .map((c) =>
+              Math.floor(c * 256)
+                .toString(16)
+                .padStart(2, "0")
+            )
+            .join("");
+      }
+    }
+    if (!this.selectedBoid) {
+      this.container
+        .querySelector("#selected_tracker")!
+        .setAttribute("hidden", "true");
+      return;
+    }
+
+    const x = Math.floor(this.selectedBoid.position[0]);
+    const y = Math.floor(this.selectedBoid.position[1]);
+
+    const position = this.container.querySelector(
+      "#selected_position"
+    ) as HTMLInputElement;
+
+    position.innerText = `(${x}, ${y})`;
+  }
+
+  public get needsUpdate(): boolean {
+    const needed = this._needsUpdate;
+    this._needsUpdate = false;
+    return needed;
   }
 
   private setupListeners() {
@@ -42,6 +92,10 @@ export class BoidsUI {
       ) as HTMLInputElement,
     };
 
+    const color = this.container.querySelector(
+      "#selected_color"
+    ) as HTMLInputElement;
+
     strength.alignment.addEventListener("change", () => {
       this.uniforms.alignmentWeight = parseFloat(strength.alignment.value);
     });
@@ -60,6 +114,16 @@ export class BoidsUI {
     });
     radius.separation.addEventListener("change", () => {
       this.uniforms.separationDistance = parseFloat(radius.separation.value);
+    });
+
+    color.addEventListener("change", () => {
+      if (!this.selectedBoid) return;
+      let val = color.value.replace("#", "");
+      const col = [val.slice(0, 2), val.slice(2, 4), val.slice(4, 6)].map(
+        (s) => parseInt(s, 16) / 256
+      );
+      this.selectedBoid.color = [col[0], col[1], col[2], 1];
+      this._needsUpdate = true;
     });
   }
 }
@@ -100,6 +164,17 @@ const UI_MARKUP = `
     </label>
   </div>
   <hr />
+  <div id="selected_tracker" class="boids-control-panel-section" hidden=true>
+    <h3>Selected</h3>
+    <label>
+      <h4>Position</h4>
+      <span class="boids-selected-position" id="selected_position"></span>
+    </label>
+    <label>
+      <h4>Color</h4>
+      <input id="selected_color" type="color" value="#ffffff"/>
+    </label>
+  </div>
 </div>
 <div class="boids-display" id="canvas">
 </div>

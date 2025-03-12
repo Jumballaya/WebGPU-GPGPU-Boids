@@ -83,12 +83,6 @@ export class Camera {
         position[0] += this.speed * this.zoom * deltaTime;
       }
 
-      if (inputs.mousePressed() && inputs.mouseDragging()) {
-        const delta = inputs.dragOffset;
-        position[0] -= delta[0] * this.zoom * this.speed * deltaTime;
-        position[1] -= delta[1] * this.zoom * this.speed * deltaTime;
-      }
-
       if (rect.x <= -xBounds) {
         position[0] += -rect.x - xBounds;
       }
